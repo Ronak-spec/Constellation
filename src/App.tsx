@@ -6,6 +6,9 @@ import { UnlitTab } from './components/UnlitTab';
 import { UnderstoryTab } from './components/UnderstoryTab';
 import { WeeklyEphemerisTab } from './components/WeeklyEphemerisTab';
 import { AuthBar } from './components/AuthBar';
+import { Logo } from './components/Logo';
+import { SvgExportModal } from './components/SvgExportModal';
+import { downloadConstellationSvg } from './utils/svgExporter';
 import {
   ConstellationState,
   StarCategory,
@@ -110,6 +113,7 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'tonight' | 'unlit' | 'understory' | 'ephemeris'>('tonight');
   const [viewingDate, setViewingDate] = useState<string>(todayStr());
   const [viewingArchiveIdx, setViewingArchiveIdx] = useState<number | null>(null);
+  const [showExportModal, setShowExportModal] = useState<boolean>(false);
   const skyHeroContainerRef = useRef<HTMLDivElement>(null);
   const syncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -592,6 +596,7 @@ export default function App() {
           onNextDay={handleNextDay}
           onJumpToToday={handleJumpToToday}
           onFlashTask={() => setActiveTab('unlit')}
+          onExportSvg={() => setShowExportModal(true)}
         />
       </div>
 
@@ -701,23 +706,95 @@ export default function App() {
           />
         )}
 
-        {/* Footer */}
-        <footer className="mt-[60px] text-[11px] text-[#8890AE] leading-[1.7] border-t border-white/10 pt-[18px]">
-          Figures are simplified estimates (16 waking hrs/day, no leap-year precision) meant for reflection, not
-          prediction. {currentUser ? 'Your sky is securely saved to your Google account in Firestore.' : 'Your sky is currently saved to this browser — sign in with Google to sync across devices.'}
-          <br />
-          <span className="opacity-75">
-            Shortcuts: <b className="text-[#EDEFF7] font-semibold">T</b> tonight ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">L</b> not yet lit ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">U</b> understory ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">E</b> ephemeris ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">← / →</b> previous / next day ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">N</b> focus the input ·{' '}
-            <b className="text-[#EDEFF7] font-semibold">Esc</b> back to tonight
-          </span>
+        {/* Footer with SVG Export Card, Logo & Astrological Legend */}
+        <footer className="mt-[60px] space-y-6 border-t border-white/10 pt-8">
+          
+          {/* Quick SVG Export Card */}
+          <div className="p-4 rounded-2xl bg-[#0a0d24]/90 border border-[#F2C572]/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 shadow-xl">
+            <div className="space-y-0.5">
+              <div className="flex items-center gap-2">
+                <span className="text-[#F2C572] text-sm">✦</span>
+                <span className="font-serif-cormorant font-medium text-base text-[#EDEFF7]">
+                  Export Celestial Vector Map
+                </span>
+                <span className="text-[10px] font-mono-dm px-2 py-0.5 rounded-full bg-[#F2C572]/15 text-[#F2C572] border border-[#F2C572]/30">
+                  SVG 1200×900
+                </span>
+              </div>
+              <p className="text-[11px] text-[#8890AE]">
+                Save or share this date’s constellation map as a resolution-independent vector graphic with embedded typography and stars.
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                onClick={() => {
+                  downloadConstellationSvg({
+                    dateStr: viewingDate,
+                    isToday: isViewingToday,
+                    entries: displayEntries,
+                    birthYear: state.birthYear,
+                    lifeExp: state.lifeExp,
+                    userName: currentUser?.displayName || 'Stargazer',
+                  });
+                }}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/15 border border-white/20 text-[#EDEFF7] text-xs font-medium transition-all cursor-pointer whitespace-nowrap"
+                title="Quick download SVG file"
+              >
+                <svg className="w-3.5 h-3.5 text-[#F2C572]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                <span>Quick .SVG</span>
+              </button>
+
+              <button
+                onClick={() => setShowExportModal(true)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-gradient-to-r from-[#F2C572] to-[#E5B55E] hover:brightness-110 text-[#080a1c] text-xs font-semibold transition-all shadow-md cursor-pointer whitespace-nowrap"
+              >
+                <span>Preview &amp; Export</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Central Celestial Brand Emblem */}
+          <div className="pt-4 pb-2 flex justify-center">
+            <Logo 
+              variant="footer" 
+              onClick={handleJumpToToday}
+            />
+          </div>
+
+          {/* Footnote information & Shortcuts */}
+          <div className="text-[11px] text-[#8890AE] leading-[1.7] space-y-1 text-center sm:text-left">
+            <div>
+              Figures are simplified estimates (16 waking hrs/day, no leap-year precision) meant for reflection, not
+              prediction. {currentUser ? 'Your sky is securely saved to your Google account in Firestore.' : 'Your sky is currently saved to this browser — sign in with Google to sync across devices.'}
+            </div>
+            <div className="opacity-75">
+              Shortcuts: <b className="text-[#EDEFF7] font-semibold">T</b> tonight ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">L</b> not yet lit ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">U</b> understory ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">E</b> ephemeris ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">← / →</b> previous / next day ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">N</b> focus the input ·{' '}
+              <b className="text-[#EDEFF7] font-semibold">Esc</b> back to tonight
+            </div>
+          </div>
         </footer>
 
       </div>
+
+      {/* High-Resolution SVG Export Modal */}
+      <SvgExportModal
+        isOpen={showExportModal}
+        onClose={() => setShowExportModal(false)}
+        dateStr={viewingDate}
+        isToday={isViewingToday}
+        entries={displayEntries}
+        birthYear={state.birthYear}
+        lifeExp={state.lifeExp}
+        userName={currentUser?.displayName || (currentUser?.isAnonymous ? 'Guest Stargazer' : 'Stargazer')}
+      />
     </div>
   );
 }

@@ -1,8 +1,52 @@
+# Dependencies
 node_modules/
-build/
+.pnp
+.pnp.js
+
+# Production build outputs
 dist/
+build/
 coverage/
-.DS_Store
-*.log
-.env*
+
+# AI Studio internal artifacts, brain state & memories
+.aistudio/
+.aistudio/**
+.artifacts/
+
+# Firebase configuration & project credentials
+firebase-applet-config.json
+firebase-blueprint.json
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+
+# Environment variables & secrets
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env*.local
 !.env.example
+
+# Operating System & Editor files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Logs & cache
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.log
+.eslintcache
+.turbo/

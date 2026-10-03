@@ -26,6 +26,7 @@ interface SkyHeroProps {
   onNextDay: () => void;
   onJumpToToday: () => void;
   onFlashTask: (index: number) => void;
+  onExportSvg?: () => void;
 }
 
 export function SkyHero({
@@ -46,6 +47,7 @@ export function SkyHero({
   onNextDay,
   onJumpToToday,
   onFlashTask,
+  onExportSvg,
 }: SkyHeroProps) {
   const [selectedStarTip, setSelectedStarTip] = useState<{
     entry: StarEntry;
@@ -221,6 +223,17 @@ export function SkyHero({
             className="ml-1 px-2.5 py-0.5 rounded-full bg-[#F2C572]/15 hover:bg-[#F2C572]/25 text-[#F2C572] border border-[#F2C572]/30 text-[11px] font-mono-dm transition-colors cursor-pointer whitespace-nowrap"
           >
             return to tonight
+          </button>
+        )}
+
+        {/* Export SVG Map Button */}
+        {onExportSvg && (
+          <button
+            onClick={onExportSvg}
+            className="ml-1 px-2.5 py-0.5 rounded-full bg-white/10 hover:bg-[#F2C572]/20 text-[#EDEFF7] hover:text-[#F2C572] border border-white/15 hover:border-[#F2C572]/40 text-[11px] font-mono-dm transition-all cursor-pointer flex items-center gap-1 whitespace-nowrap"
+            title="Export high-resolution SVG graphic of this sky"
+          >
+            <span>✦ SVG</span>
           </button>
         )}
       </div>

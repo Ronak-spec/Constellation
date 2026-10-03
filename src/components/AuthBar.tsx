@@ -127,7 +127,7 @@ export function AuthBar({ user, loading, syncing, onRefreshSync }: AuthBarProps)
 
   return (
     <header className="absolute top-4 right-6 z-30 flex items-center gap-3 font-sans-manrope">
-      
+
       {/* Cloud Sync Status indicator */}
       {user && (
         <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#080a1c]/80 border border-white/10 text-[11px] text-[#8890AE]">
