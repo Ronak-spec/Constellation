@@ -1,0 +1,6 @@
+{
+  "name": "Constellation",
+  "description": "A sky for your life. Log your waking hours as stars, track unlit intentions, and bury thoughts into the understory.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

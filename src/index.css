@@ -1,0 +1,181 @@
+@import "tailwindcss";
+
+:root {
+  --sky-top: #0C1030;
+  --sky-mid: #131A45;
+  --sky-bottom: #05060F;
+  --nebula-a: rgba(90, 60, 150, 0.22);
+  --nebula-b: rgba(30, 110, 110, 0.16);
+  --star-ambient: #C9D6F5;
+  --star-neutral: #A9C0F0;
+  --star-gold: #F2C572;
+  --star-ember: #E0654A;
+  --line: rgba(201, 214, 245, 0.32);
+  --text: #EDEFF7;
+  --text-dim: #8890AE;
+  --panel: rgba(255, 255, 255, 0.04);
+  --panel-line: rgba(255, 255, 255, 0.09);
+  --radius: 9px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  background: var(--sky-bottom);
+  color: var(--text);
+  font-family: 'Manrope', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: rgba(242, 197, 114, 0.28);
+}
+
+.font-serif-cormorant {
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+
+.font-mono-dm {
+  font-family: 'DM Mono', monospace;
+}
+
+.font-sans-manrope {
+  font-family: 'Manrope', sans-serif;
+}
+
+/* Custom smooth dark scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: rgba(8, 12, 28, 0.6);
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(242, 197, 114, 0.25);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(242, 197, 114, 0.45);
+}
+
+/* Keyframe Animations */
+@keyframes twinkle {
+  0%, 100% { opacity: 0.15; }
+  50% { opacity: 0.9; }
+}
+
+@keyframes pulseStar {
+  0%, 100% { opacity: 0.75; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.15); }
+}
+
+@keyframes flickerStar {
+  0%, 100% { opacity: 0.35; }
+  20% { opacity: 0.7; }
+  40% { opacity: 0.25; }
+  60% { opacity: 0.6; }
+  80% { opacity: 0.3; }
+}
+
+@keyframes unlitBreathe {
+  0%, 100% { opacity: 0.28; }
+  50% { opacity: 0.62; }
+}
+
+@keyframes ringPulse {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+@keyframes driftIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes driftBob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
+@keyframes beaconSweep {
+  0%, 100% { box-shadow: 0 0 6px 2px rgba(242, 197, 114, 0.25); }
+  50% { box-shadow: 0 0 11px 4px rgba(242, 197, 114, 0.5); }
+}
+
+@keyframes shoot {
+  0% { opacity: 0; transform: translate(0,0) rotate(-20deg); }
+  8% { opacity: 1; }
+  85% { opacity: 1; }
+  100% { opacity: 0; transform: translate(-360px, 220px) rotate(-20deg); }
+}
+
+@keyframes flashRow {
+  0%, 100% { background: transparent; }
+  30% { background: rgba(242, 197, 114, 0.12); }
+}
+
+@keyframes usNodeIn {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(0.2); }
+  65% { opacity: 1; transform: translate(-50%, -50%) scale(1.15); }
+  100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+.ambient-star {
+  fill: var(--star-ambient);
+  animation: twinkle 4.5s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.log-star {
+  animation: pulseStar 3s ease-in-out infinite;
+  transform-origin: center;
+  cursor: pointer;
+}
+
+.log-star.ember {
+  animation: flickerStar 2.1s ease-in-out infinite;
+}
+
+.const-line {
+  stroke: var(--line);
+  stroke-width: 1;
+  fill: none;
+}
+
+.unlit-hero-star {
+  fill: none;
+  stroke-width: 1.4;
+  cursor: pointer;
+  animation: unlitBreathe 3.6s ease-in-out infinite;
+  transform-origin: center;
+}
+
+.ring-seg {
+  cursor: pointer;
+  transition: stroke-width 0.2s ease, opacity 0.2s ease;
+}
+.ring-seg:hover {
+  opacity: 0.85;
+}
+.ring-seg.selected {
+  filter: drop-shadow(0 0 3px rgba(242, 197, 114, 0.55));
+}
+.ring-tonight {
+  animation: ringPulse 3s ease-in-out infinite;
+  cursor: pointer;
+}
+
+.shooting-star {
+  position: absolute;
+  width: 140px;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #fff, var(--star-gold), transparent);
+  border-radius: 2px;
+  pointer-events: none;
+  z-index: 20;
+  opacity: 0;
+}
