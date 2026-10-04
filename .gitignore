@@ -29,6 +29,7 @@ ui-debug.log*
 .env.production.local
 .env*.local
 !.env.example
+firebase-applet-config.json
 
 # Operating System & Editor files
 .DS_Store
