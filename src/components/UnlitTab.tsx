@@ -11,9 +11,11 @@ interface UnlitTabProps {
 
 export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitTabProps) {
   const [taskText, setTaskText] = useState('');
+  const [taskTextError, setTaskTextError] = useState(false);
   const [taskCat, setTaskCat] = useState<StarCategory>('Work');
   const [lightingIdx, setLightingIdx] = useState<number | null>(null);
   const [lightingMins, setLightingMins] = useState('');
+  const [lightMinsError, setLightMinsError] = useState(false);
 
   const daysBetween = (a: number, b: number) => Math.round((b - a) / 86400000);
   const now = Date.now();
@@ -27,19 +29,27 @@ export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitT
   const handleAddTask = (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = taskText.trim();
-    if (!trimmed) return;
+    if (!trimmed) {
+      setTaskTextError(true);
+      return;
+    }
     onAddTask(trimmed, taskCat);
     setTaskText('');
+    setTaskTextError(false);
   };
 
   const handleConfirmLight = (index: number) => {
     const mins = parseInt(lightingMins, 10);
-    if (!mins || mins <= 0) return;
+    if (!mins || mins <= 0 || isNaN(mins)) {
+      setLightMinsError(true);
+      return;
+    }
 
     onLightTask(index, mins);
     audio.chimeLightTask();
     setLightingIdx(null);
     setLightingMins('');
+    setLightMinsError(false);
   };
 
   return (
@@ -70,13 +80,22 @@ export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitT
 
         {/* Form */}
         <form onSubmit={handleAddTask} className="flex gap-2.5 flex-wrap items-center mb-[22px]">
-          <input
-            type="text"
-            placeholder="a star you intend to earn"
-            value={taskText}
-            onChange={(e) => setTaskText(e.target.value)}
-            className="flex-1 min-w-[220px] bg-white/4 border border-white/10 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none focus:border-[#F2C572] transition-colors"
-          />
+          <div className="flex-1 min-w-[220px]">
+            <input
+              type="text"
+              placeholder="a star you intend to earn"
+              value={taskText}
+              onChange={(e) => {
+                setTaskText(e.target.value);
+                if (taskTextError && e.target.value.trim()) setTaskTextError(false);
+              }}
+              className={`w-full bg-white/4 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none transition-all ${
+                taskTextError
+                  ? 'border-2 border-[#E0654A] shadow-[0_0_10px_rgba(224,101,74,0.35)] focus:border-[#E0654A]'
+                  : 'border border-white/10 focus:border-[#F2C572]'
+              }`}
+            />
+          </div>
 
           {/* Category Picker */}
           <div className="flex gap-[7px]">
@@ -144,6 +163,7 @@ export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitT
                         onClick={() => {
                           setLightingIdx(i);
                           setLightingMins('');
+                          setLightMinsError(false);
                         }}
                         className="bg-transparent border border-[#F2C572] text-[#F2C572] hover:bg-[#F2C572] hover:text-[#1A1408] text-[11px] px-2.5 py-1 rounded-xl cursor-pointer font-sans-manrope transition-colors"
                       >
@@ -164,11 +184,18 @@ export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitT
                         placeholder="mins"
                         autoFocus
                         value={lightingMins}
-                        onChange={(e) => setLightingMins(e.target.value)}
+                        onChange={(e) => {
+                          setLightingMins(e.target.value);
+                          if (lightMinsError && parseInt(e.target.value, 10) > 0) setLightMinsError(false);
+                        }}
                         onKeyDown={(e) => {
                           if (e.key === 'Enter') handleConfirmLight(i);
                         }}
-                        className="bg-white/4 border border-white/10 text-[#EDEFF7] font-sans-manrope text-[13px] px-2.5 py-1.5 rounded-[6px] w-16 outline-none focus:border-[#F2C572]"
+                        className={`bg-white/4 text-[#EDEFF7] font-sans-manrope text-[13px] px-2.5 py-1.5 rounded-[6px] w-16 outline-none transition-all ${
+                          lightMinsError
+                            ? 'border-2 border-[#E0654A] shadow-[0_0_8px_rgba(224,101,74,0.35)] focus:border-[#E0654A]'
+                            : 'border border-white/10 focus:border-[#F2C572]'
+                        }`}
                       />
                       <button
                         onClick={() => handleConfirmLight(i)}
@@ -177,7 +204,10 @@ export function UnlitTab({ tasks, onAddTask, onLightTask, onRemoveTask }: UnlitT
                         light this star
                       </button>
                       <button
-                        onClick={() => setLightingIdx(null)}
+                        onClick={() => {
+                          setLightingIdx(null);
+                          setLightMinsError(false);
+                        }}
                         className="bg-transparent border-none text-[#8890AE] hover:text-[#EDEFF7] text-xs cursor-pointer"
                       >
                         cancel

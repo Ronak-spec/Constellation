@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { StarEntry, UnlitTask, ArchivedNight, CAT_COLORS, CONST_NAMES } from '../types/constellation';
 import { 
   generateDailyAmbientStars, 
@@ -49,11 +49,16 @@ export function SkyHero({
   onFlashTask,
   onExportSvg,
 }: SkyHeroProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
   const [selectedStarTip, setSelectedStarTip] = useState<{
     entry: StarEntry;
     x: number;
     y: number;
   } | null>(null);
+
+  const [tipScreenPos, setTipScreenPos] = useState<{ left: number; top: number } | null>(null);
 
   const [driftwoodItem, setDriftwoodItem] = useState<{
     entry: StarEntry;
@@ -62,6 +67,50 @@ export function SkyHero({
   } | null>(null);
 
   const [driftwoodDismissed, setDriftwoodDismissed] = useState(false);
+
+  // Update clamped star tooltip coordinates whenever selected star changes or window resizes
+  useEffect(() => {
+    if (!selectedStarTip || !containerRef.current || !svgRef.current) {
+      setTipScreenPos(null);
+      return;
+    }
+
+    const updateTipPosition = () => {
+      if (!selectedStarTip || !containerRef.current || !svgRef.current) return;
+      const cRect = containerRef.current.getBoundingClientRect();
+      const sRect = svgRef.current.getBoundingClientRect();
+
+      // Exact pixel position of star relative to container
+      const starPxX = sRect.left - cRect.left + (selectedStarTip.x / 800) * sRect.width;
+      const starPxY = sRect.top - cRect.top + (selectedStarTip.y / 620) * sRect.height;
+
+      const cardW = Math.min(270, cRect.width - 32);
+      const cardH = 115;
+
+      // Position tooltip safely within screen/container bounds
+      let left = starPxX + 16;
+      if (left + cardW > cRect.width - 16) {
+        left = starPxX - cardW - 16;
+      }
+      if (left < 16) {
+        left = Math.max(16, (cRect.width - cardW) / 2);
+      }
+
+      let top = starPxY - 45;
+      if (top + cardH > cRect.height - 24) {
+        top = cRect.height - cardH - 24;
+      }
+      if (top < 65) {
+        top = Math.max(65, starPxY + 20);
+      }
+
+      setTipScreenPos({ left, top });
+    };
+
+    updateTipPosition();
+    window.addEventListener('resize', updateTipPosition);
+    return () => window.removeEventListener('resize', updateTipPosition);
+  }, [selectedStarTip]);
 
   // Life calculations
   const currentYear = new Date().getFullYear();
@@ -164,6 +213,7 @@ export function SkyHero({
 
   return (
     <div
+      ref={containerRef}
       className={`relative w-full min-h-[640px] overflow-hidden transition-colors duration-700 select-none ${
         isUnlitMode
           ? 'bg-[radial-gradient(ellipse_700px_400px_at_15%_8%,rgba(90,90,120,0.16),transparent_60%),radial-gradient(ellipse_600px_500px_at_85%_30%,rgba(60,70,100,0.14),transparent_65%),linear-gradient(180deg,#171B30_0%,#10132A_45%,#070812_100%)]'
@@ -240,8 +290,9 @@ export function SkyHero({
 
       {/* Main Sky SVG */}
       <svg
+        ref={svgRef}
         viewBox="0 0 800 620"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="xMidYMid meet"
         onClick={() => setSelectedStarTip(null)}
         className="absolute inset-0 w-full h-full block"
       >
@@ -288,81 +339,50 @@ export function SkyHero({
               {displayEntries.map((e, i) => {
                 const pos = starPositions[i];
                 if (!pos) return null;
-                const r = 3.2 + Math.min(4.5, e.mins / 35);
+                const r = 3.4 + Math.min(4.5, e.mins / 35);
+                const isSelected = selectedStarTip?.x === pos.x && selectedStarTip?.y === pos.y;
 
                 return (
-                  <circle
-                    key={e.id || i}
-                    cx={pos.x}
-                    cy={pos.y}
-                    r={r}
-                    fill={CAT_COLORS[e.cat]}
-                    className={`log-star ${e.cat === 'Scroll' ? 'ember' : ''}`}
-                    onClick={(ev) => {
-                      ev.stopPropagation();
-                      setSelectedStarTip({ entry: e, x: pos.x, y: pos.y });
-                    }}
-                  />
+                  <g key={e.id || i}>
+                    {/* Glowing highlight target ring for selected star */}
+                    {isSelected && (
+                      <>
+                        <circle
+                          cx={pos.x}
+                          cy={pos.y}
+                          r={r + 6}
+                          fill="none"
+                          stroke={CAT_COLORS[e.cat]}
+                          strokeWidth="1.5"
+                          opacity="0.75"
+                        />
+                        <circle
+                          cx={pos.x}
+                          cy={pos.y}
+                          r={r + 10}
+                          fill="none"
+                          stroke="#F2C572"
+                          strokeWidth="1"
+                          strokeDasharray="3 3"
+                          opacity="0.85"
+                        />
+                      </>
+                    )}
+
+                    <circle
+                      cx={pos.x}
+                      cy={pos.y}
+                      r={r}
+                      fill={CAT_COLORS[e.cat]}
+                      className={`log-star ${e.cat === 'Scroll' ? 'ember' : ''} cursor-pointer transition-transform hover:scale-125`}
+                      onClick={(ev) => {
+                        ev.stopPropagation();
+                        setSelectedStarTip({ entry: e, x: pos.x, y: pos.y });
+                      }}
+                    />
+                  </g>
                 );
               })}
-
-              {/* Star Tooltip */}
-              {selectedStarTip && (
-                <g id="starTip">
-                  {(() => {
-                    const w = 156;
-                    const h = 58;
-                    let tx = selectedStarTip.x + 12;
-                    let ty = selectedStarTip.y - h - 10;
-                    if (tx + w > 795) tx = selectedStarTip.x - w - 12;
-                    if (ty < 5) ty = selectedStarTip.y + 14;
-
-                    return (
-                      <>
-                        <rect
-                          x={tx}
-                          y={ty}
-                          width={w}
-                          height={h}
-                          rx="8"
-                          fill="rgba(8,10,28,0.94)"
-                          stroke="rgba(242,197,114,0.3)"
-                          strokeWidth="1"
-                        />
-                        <text
-                          x={tx + 12}
-                          y={ty + 22}
-                          fill="#F2C572"
-                          fontFamily="'Cormorant Garamond', serif"
-                          fontSize="15"
-                        >
-                          {selectedStarTip.entry.activity.length > 18
-                            ? selectedStarTip.entry.activity.slice(0, 17) + '…'
-                            : selectedStarTip.entry.activity}
-                        </text>
-                        <text
-                          x={tx + 12}
-                          y={ty + 39}
-                          fill="#EDEFF7"
-                          fontFamily="'Manrope', sans-serif"
-                          fontSize="11"
-                        >
-                          {selectedStarTip.entry.cat} · {selectedStarTip.entry.mins} min
-                        </text>
-                        <text
-                          x={tx + 12}
-                          y={ty + 51}
-                          fill="#8890AE"
-                          fontFamily="'Manrope', sans-serif"
-                          fontSize="10"
-                        >
-                          {selectedStarTip.entry.time || currentViewingDate}
-                        </text>
-                      </>
-                    );
-                  })()}
-                </g>
-              )}
             </g>
           </>
         ) : (
@@ -389,6 +409,61 @@ export function SkyHero({
           </g>
         )}
       </svg>
+
+      {/* Floating Screen-Clamped Star Detail Card */}
+      {selectedStarTip && tipScreenPos && (
+        <div
+          className="absolute z-40 bg-[#080a1c]/95 backdrop-blur-xl border border-[#F2C572]/40 rounded-2xl p-4 shadow-2xl transition-all duration-150 text-[#EDEFF7] w-[260px] max-w-[calc(100vw-32px)] space-y-2 pointer-events-auto"
+          style={{
+            left: `${tipScreenPos.left}px`,
+            top: `${tipScreenPos.top}px`,
+          }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="flex items-start justify-between gap-2 border-b border-white/10 pb-2">
+            <div className="min-w-0 flex-1">
+              <h4 className="font-serif-cormorant text-base font-semibold text-[#F2C572] leading-tight break-words">
+                {selectedStarTip.entry.activity}
+              </h4>
+            </div>
+            <button
+              onClick={() => setSelectedStarTip(null)}
+              className="text-[#8890AE] hover:text-white text-xs p-1 -mr-1 -mt-1 cursor-pointer transition-colors"
+              title="Close"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between text-xs font-sans-manrope">
+            <span
+              className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-medium"
+              style={{
+                backgroundColor: `${CAT_COLORS[selectedStarTip.entry.cat]}20`,
+                color: CAT_COLORS[selectedStarTip.entry.cat],
+                border: `1px solid ${CAT_COLORS[selectedStarTip.entry.cat]}40`,
+              }}
+            >
+              <span
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: CAT_COLORS[selectedStarTip.entry.cat] }}
+              />
+              {selectedStarTip.entry.cat}
+            </span>
+
+            <span className="text-[#EDEFF7] font-mono-dm text-[11px]">
+              {selectedStarTip.entry.mins} mins
+            </span>
+          </div>
+
+          <div className="text-[10.5px] text-[#8890AE] font-mono-dm pt-0.5 flex items-center justify-between">
+            <span>{selectedStarTip.entry.time || 'Logged'}</span>
+            <span className="italic font-serif-cormorant text-[11.5px] text-[#8890AE]">
+              {currentViewingDate}
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Hero Content Overlay */}
       <div className="relative z-10 pt-16 px-11 max-w-[560px] pointer-events-none sm:pt-16 sm:px-11 max-sm:pt-14 max-sm:px-[22px]">
@@ -471,144 +546,7 @@ export function SkyHero({
         </div>
       </div>
 
-      {/* Ring Atlas Caption */}
-      {!isUnlitMode && archive.length > 0 && (
-        <div className="absolute right-[46px] bottom-[164px] z-20 text-[11px] text-[#8890AE] text-right max-w-[150px] leading-[1.5] italic font-serif-cormorant max-sm:hidden">
-          read it like a trunk — width and blend, not numbers
-        </div>
-      )}
 
-      {/* Ring Atlas (Tree Rings Dendrochronology) */}
-      {!isUnlitMode && archive.length > 0 && (
-        <div className="absolute right-10 bottom-7 max-sm:right-[22px] max-sm:bottom-[22px] z-20 flex items-center gap-2">
-          <div className="flex flex-col gap-1.5">
-            <button
-              onClick={onPrevDay}
-              className="bg-white/5 border border-white/10 text-[#8890AE] hover:text-[#F2C572] hover:border-[#F2C572] w-[22px] h-[22px] rounded-full cursor-pointer text-[11px] flex items-center justify-center transition-colors"
-              title="Previous night ring (←)"
-            >
-              ‹
-            </button>
-            <button
-              onClick={onNextDay}
-              disabled={isViewingToday}
-              className="bg-white/5 border border-white/10 text-[#8890AE] hover:text-[#F2C572] hover:border-[#F2C572] disabled:opacity-25 disabled:cursor-default w-[22px] h-[22px] rounded-full cursor-pointer text-[11px] flex items-center justify-center transition-colors"
-              title="Next night ring (→)"
-            >
-              ›
-            </button>
-          </div>
-
-          <svg viewBox="0 0 132 132" className="w-[132px] h-[132px] overflow-visible">
-            {/* Historical nights rings */}
-            {archive.map((night, idx) => {
-              const r = innerStart + idx * gap;
-              const { totals, sum } = computeTotals(night.entries);
-              const sw = Math.max(1.4, Math.min(gap * 0.85, 1.4 + night.entries.length * 0.4));
-              const isSelected = viewingArchiveIdx === idx;
-
-              let cumulative = 0;
-
-              return (
-                <g
-                  key={idx}
-                  onClick={() => onSelectArchiveNight(idx)}
-                  className="cursor-pointer"
-                >
-                  <title>
-                    {night.date} — “{night.name}” · {night.entries.length} star
-                    {night.entries.length === 1 ? '' : 's'}
-                  </title>
-                  {sum <= 0 ? (
-                    <circle
-                      cx={cx}
-                      cy={cy}
-                      r={r}
-                      fill="none"
-                      stroke="rgba(255,255,255,0.08)"
-                      strokeWidth={sw}
-                      className={`ring-seg ${isSelected ? 'selected' : ''}`}
-                    />
-                  ) : (
-                    Object.keys(totals).map((cat) => {
-                      const pct = (totals[cat] / sum) * 100;
-                      const strokeColor = CAT_COLORS[cat as keyof typeof CAT_COLORS] || '#A9C0F0';
-                      const strokeDasharray = `${pct} ${100 - pct}`;
-                      const strokeDashoffset = -cumulative;
-                      cumulative += pct;
-
-                      return (
-                        <circle
-                          key={cat}
-                          cx={cx}
-                          cy={cy}
-                          r={r}
-                          fill="none"
-                          stroke={strokeColor}
-                          strokeWidth={sw}
-                          pathLength="100"
-                          strokeDasharray={strokeDasharray}
-                          strokeDashoffset={strokeDashoffset}
-                          transform={`rotate(-90 ${cx} ${cy})`}
-                          className={`ring-seg ${isSelected ? 'selected' : ''}`}
-                        />
-                      );
-                    })
-                  )}
-                </g>
-              );
-            })}
-
-            {/* Outermost Ring: Tonight */}
-            <g
-              onClick={() => onSelectArchiveNight(null)}
-              className="ring-tonight cursor-pointer"
-            >
-              <title>Tonight (live)</title>
-              {tonightData.sum > 0 ? (
-                (() => {
-                  let cumulative = 0;
-                  return Object.keys(tonightData.totals).map((cat) => {
-                    const pct = (tonightData.totals[cat] / tonightData.sum) * 100;
-                    const strokeColor = CAT_COLORS[cat as keyof typeof CAT_COLORS] || '#F2C572';
-                    const strokeDasharray = `${pct} ${100 - pct}`;
-                    const strokeDashoffset = -cumulative;
-                    cumulative += pct;
-
-                    return (
-                      <circle
-                        key={cat}
-                        cx={cx}
-                        cy={cy}
-                        r={tonightR}
-                        fill="none"
-                        stroke={strokeColor}
-                        strokeWidth="2.4"
-                        pathLength="100"
-                        strokeDasharray={strokeDasharray}
-                        strokeDashoffset={strokeDashoffset}
-                        transform={`rotate(-90 ${cx} ${cy})`}
-                        className={`ring-seg ${isViewingToday ? 'selected' : ''}`}
-                      />
-                    );
-                  });
-                })()
-              ) : (
-                <circle
-                  cx={cx}
-                  cy={cy}
-                  r={tonightR}
-                  fill="none"
-                  stroke="#F2C572"
-                  strokeWidth="1.6"
-                  strokeDasharray="2 3"
-                  className={`ring-seg ${isViewingToday ? 'selected' : ''}`}
-                />
-              )}
-            </g>
-          </svg>
-        </div>
-      )}
 
       {/* Driftwood: Passive, guilt-free memory */}
       {!isUnlitMode && isViewingToday && driftwoodItem && (

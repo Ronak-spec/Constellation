@@ -34,6 +34,8 @@ export function TonightTab({
   const [activity, setActivity] = useState('');
   const [mins, setMins] = useState('');
   const [activeCat, setActiveCat] = useState<StarCategory>('Work');
+  const [activityError, setActivityError] = useState(false);
+  const [minsError, setMinsError] = useState(false);
 
   const [subName, setSubName] = useState('');
   const [subCost, setSubCost] = useState('');
@@ -87,12 +89,30 @@ export function TonightTab({
     if (readOnly) return;
     const trimmed = activity.trim();
     const parsedMins = parseInt(mins, 10);
-    if (!trimmed || !parsedMins || parsedMins <= 0) return;
+    
+    let hasError = false;
+    if (!trimmed) {
+      setActivityError(true);
+      hasError = true;
+    } else {
+      setActivityError(false);
+    }
+
+    if (!parsedMins || parsedMins <= 0 || isNaN(parsedMins)) {
+      setMinsError(true);
+      hasError = true;
+    } else {
+      setMinsError(false);
+    }
+
+    if (hasError) return;
 
     onAddEntry(trimmed, parsedMins, activeCat);
     audio.chimeAddStar();
     setActivity('');
     setMins('');
+    setActivityError(false);
+    setMinsError(false);
   };
 
   const handleAddSub = (e: React.FormEvent) => {
@@ -151,24 +171,53 @@ export function TonightTab({
             readOnly ? 'opacity-35 pointer-events-none' : ''
           }`}
         >
-          <input
-            type="text"
-            placeholder="what just happened?"
-            value={activity}
-            onChange={(e) => setActivity(e.target.value)}
-            className="flex-1 min-w-[220px] bg-white/4 border border-white/9 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none focus:border-[#F2C572] transition-colors"
-          />
-          <input
-            type="number"
-            placeholder="mins"
-            min="1"
-            value={mins}
-            onChange={(e) => setMins(e.target.value)}
-            className="w-[74px] bg-white/4 border border-white/9 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none focus:border-[#F2C572] transition-colors"
-          />
+          <div className="flex-1 min-w-[220px] flex flex-col gap-1">
+            <input
+              type="text"
+              placeholder="what just happened?"
+              value={activity}
+              onChange={(e) => {
+                setActivity(e.target.value);
+                if (activityError && e.target.value.trim()) setActivityError(false);
+              }}
+              className={`w-full bg-white/4 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none transition-all ${
+                activityError
+                  ? 'border-2 border-[#E0654A] shadow-[0_0_10px_rgba(224,101,74,0.35)] focus:border-[#E0654A]'
+                  : 'border border-white/9 focus:border-[#F2C572]'
+              }`}
+            />
+            {activityError && (
+              <span className="text-[11px] text-[#E0654A] font-sans-manrope pl-1 animate-fadeIn">
+                Activity description required
+              </span>
+            )}
+          </div>
+
+          <div className="w-[84px] flex flex-col gap-1">
+            <input
+              type="number"
+              placeholder="mins"
+              min="1"
+              value={mins}
+              onChange={(e) => {
+                setMins(e.target.value);
+                if (minsError && parseInt(e.target.value, 10) > 0) setMinsError(false);
+              }}
+              className={`w-full bg-white/4 text-[#EDEFF7] font-sans-manrope text-sm p-[11px_14px] rounded-lg outline-none transition-all ${
+                minsError
+                  ? 'border-2 border-[#E0654A] shadow-[0_0_10px_rgba(224,101,74,0.35)] focus:border-[#E0654A]'
+                  : 'border border-white/9 focus:border-[#F2C572]'
+              }`}
+            />
+            {minsError && (
+              <span className="text-[11px] text-[#E0654A] font-sans-manrope pl-0.5 whitespace-nowrap animate-fadeIn">
+                Add mins
+              </span>
+            )}
+          </div>
 
           {/* Category Picker */}
-          <div className="flex gap-[7px]">
+          <div className="flex gap-[7px] self-start pt-1 sm:pt-0">
             {(['Work', 'Chores', 'Connection', 'Rest', 'Joy', 'Scroll'] as StarCategory[]).map((cat) => (
               <button
                 key={cat}
@@ -189,7 +238,7 @@ export function TonightTab({
 
           <button
             type="submit"
-            className="bg-[#F2C572] text-[#1A1408] border-none font-sans-manrope font-bold text-[13px] px-5 py-[11px] rounded-lg cursor-pointer hover:bg-[#f5d38c] hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(242,197,114,0.25)] active:translate-y-0 transition-all"
+            className="self-start bg-[#F2C572] text-[#1A1408] border-none font-sans-manrope font-bold text-[13px] px-5 py-[11px] rounded-lg cursor-pointer hover:bg-[#f5d38c] hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(242,197,114,0.25)] active:translate-y-0 transition-all"
           >
             Add to sky
           </button>

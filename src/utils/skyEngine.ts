@@ -189,19 +189,20 @@ export function generateDailyStarPositions(entries: StarEntry[], dateStr: string
   const rng = createRng(seed + 999);
 
   // Define dynamic astronomical center anchor for this date's asterism
-  const centerX = 480 + (rng() - 0.5) * 120;
-  const centerY = 230 + (rng() - 0.5) * 100;
-  const spreadRadius = 140 + rng() * 80;
+  const centerX = 490 + (rng() - 0.5) * 70;
+  const centerY = 240 + (rng() - 0.5) * 70;
+  const spreadRadius = 115 + rng() * 55;
 
   return entries.map((_, i) => {
     // Distribute sequentially in an astronomical wandering curve
-    const angle = (i / Math.max(1, entries.length)) * Math.PI * 1.5 + (rng() - 0.5) * 0.4;
-    const radial = (0.3 + (i / Math.max(1, entries.length)) * 0.7) * spreadRadius;
-    const jitterX = (rng() - 0.5) * 50;
-    const jitterY = (rng() - 0.5) * 50;
+    const angle = (i / Math.max(1, entries.length)) * Math.PI * 1.5 + (rng() - 0.5) * 0.35;
+    const radial = (0.25 + (i / Math.max(1, entries.length)) * 0.75) * spreadRadius;
+    const jitterX = (rng() - 0.5) * 35;
+    const jitterY = (rng() - 0.5) * 35;
 
-    const x = Math.max(120, Math.min(760, centerX + Math.cos(angle) * radial + jitterX));
-    const y = Math.max(50, Math.min(520, centerY + Math.sin(angle) * radial * 0.75 + jitterY));
+    // Guaranteed safe margins away from screen boundaries & hero text
+    const x = Math.max(260, Math.min(670, centerX + Math.cos(angle) * radial + jitterX));
+    const y = Math.max(70, Math.min(470, centerY + Math.sin(angle) * radial * 0.75 + jitterY));
 
     return { x, y };
   });
